@@ -1,28 +1,36 @@
 const db = require('../config/db');
 
 
-const createUser = (req, res) => {
-  const { first_name, last_name, email, password } = req.body;
+const getUserById = (req, res) => {
+  const { id } = req.params;  
 
-  if (!first_name || !last_name || !email || !password) {
-    return res.status(400).json({ error: 'First name, last name, email en password zijn verplicht.' });
-  }
 
-  const query = 'INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)';
-  db.query(query, [first_name, last_name, email, password], (err, result) => {
+  const query = 'SELECT * FROM users WHERE id = ?';
+  db.query(query, [id], (err, result) => {
     if (err) {
-      console.error('Error executing query:', err);
-      return res.status(500).send('Error creating user');
+      return res.status(500).send('Error retrieving user');
     }
-    res.status(201).send('User created');
+    if (result.length === 0) {
+      return res.status(404).send('User not found');
+    }
+   
+    res.json(result[0]);
   });
 };
 
 
 const getUsers = (req, res) => {
-  db.query('SELECT * FROM users', (err, results) => {
+  const limit = parseInt(req.query.limit,) || 1000;  
+  const offset = parseInt(req.query.offset, 10) || 0;  
+
+ 
+  if (isNaN(limit) || isNaN(offset)) {
+    return res.status(400).send('Limit and offset must be numbers.');
+  }
+
+  const query = 'SELECT * FROM users LIMIT ? OFFSET ?';
+  db.query(query, [limit, offset], (err, results) => {
     if (err) {
-      console.error('Error retrieving users:', err);
       return res.status(500).send('Error retrieving users');
     }
     res.json(results);
@@ -30,41 +38,103 @@ const getUsers = (req, res) => {
 };
 
 
-const updateUser = (req, res) => {
-    const { id } = req.params;  
-    const { first_name, last_name, email, password } = req.body;
+const createUser = (req, res) => {
+  const { first_name, last_name, email, password } = req.body;
+
   
- 
-    if (!first_name || !last_name || !email || !password) {
-      return res.status(400).json({ error: 'First name, last name, email en password zijn verplicht.' });
+  if (!first_name || !last_name || !email || !password) {
+    return res.status(400).json({ error: 'First name, last name, email and password are required.' });
+  }
+
+  
+  const nameRegex = /^[A-Za-z\s]+$/;  
+  if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {
+    return res.status(400).send('First name and last name cannot contain numbers.');
+  }
+
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).send('Please provide a valid email address.');
+  }
+
+  
+  const query = 'INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)';
+  db.query(query, [first_name, last_name, email, password], (err, result) => {
+    if (err) {
+      return res.status(500).send('Error creating user');
     }
+    res.status(201).send('User created');
+  });
+};
+
+
+const updateUser = (req, res) => {
+  const { id } = req.params;
+
   
-    
-    const query = 'UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE id = ?';
-    db.query(query, [first_name, last_name, email, password, id], (err, result) => {
-      if (err) {
-        console.error('Error updating user:', err);  
-        return res.status(500).send('Error updating user');
-      }
-      if (result.affectedRows === 0) {
-        return res.status(404).send('User not found');  
-      }
-      res.send('User updated');
-    });
-  };
+  if (isNaN(id)) {
+    return res.status(400).send('ID must be a number.');
+  }
+
+  const { first_name, last_name, email, password } = req.body;
+
+  
+  const nameRegex = /^[A-Za-z\s]+$/;  
+  if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {
+    return res.status(400).send('First name and last name cannot contain numbers.');
+  }
+
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).send('Please provide a valid email address.');
+  }
+
+  const query = 'UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE id = ?';
+  db.query(query, [first_name, last_name, email, password, id], (err, result) => {
+    if (err) {
+      return res.status(500).send('Error updating user');
+    }
+    res.status(200).send('User updated');
+  });
+};
 
 
 const deleteUser = (req, res) => {
   const { id } = req.params;
 
+  
+  if (isNaN(id)) {
+    return res.status(400).send('ID must be a number.');
+  }
+
   const query = 'DELETE FROM users WHERE id = ?';
   db.query(query, [id], (err, result) => {
     if (err) {
-      console.error('Error deleting user:', err);
       return res.status(500).send('Error deleting user');
     }
-    res.send('User deleted');
+    res.status(200).send('User deleted');
   });
 };
 
-module.exports = { createUser, getUsers, updateUser, deleteUser };
+const searchUsers = (req, res) => {
+    const search = req.query.search || '';  
+  
+    
+    const query = 'SELECT * FROM users WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ?';
+    
+    db.query(query, [`%${search}%`, `%${search}%`, `%${search}%`], (err, results) => {
+      if (err) {
+        return res.status(500).send('Error retrieving users');
+      }
+      if (results.length === 0) {
+        return res.status(404).send('User not found');
+      }
+      res.json(results);  
+    });
+  };
+  
+
+    
+module.exports = { getUsers, createUser, updateUser, deleteUser, getUserById, searchUsers };
