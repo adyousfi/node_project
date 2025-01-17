@@ -33,22 +33,29 @@ const getCategoryById = (req, res) => {
 };
 
 
-
 const createCategory = (req, res) => {
   const { name, description } = req.body;
 
-  if (!name) {
+  
+  if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Category name is required.' });
   }
 
+  if (!description || description.trim() === '') {
+    return res.status(400).json({ error: 'Description is required.' });
+  }
+
+  
   const query = 'INSERT INTO category (name, description) VALUES (?, ?)';
-  db.query(query, [name, description], (err, result) => {
+  db.query(query, [name.trim(), description.trim()], (err, result) => {
     if (err) {
-      return res.status(500).send('Error creating category');
+      console.error('Error creating category:', err);
+      return res.status(500).json({ error: 'Error creating category' });
     }
-    res.status(201).send('Category created');
+    res.status(201).json({ message: 'Category created' });
   });
 };
+
 
 
 const updateCategory = (req, res) => {

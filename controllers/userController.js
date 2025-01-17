@@ -119,21 +119,41 @@ const deleteUser = (req, res) => {
 };
 
 const searchUsers = (req, res) => {
-    const search = req.query.search || '';  
+  const { search } = req.query;
+
   
+  if (!search) {
+    return res.status(400).json({ error: 'Search parameter is required' });
+  }
+
+  
+  const query = `
+    SELECT * FROM users 
+    WHERE first_name LIKE ? 
+      OR last_name LIKE ?
+  `;
+
+  
+  const searchTerm = `%${search}%`;
+
+  // Voer de query uit
+  db.query(query, [searchTerm, searchTerm], (err, results) => {
+    if (err) {
+      console.error('Error retrieving users:', err);
+      return res.status(500).json({ error: 'Error retrieving users' });
+    }
+
     
-    const query = 'SELECT * FROM users WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ?';
+    if (results.length === 0) {
+      return res.status(404).json({ success: true, data: [], message: 'No users found' });
+    }
+
     
-    db.query(query, [`%${search}%`, `%${search}%`, `%${search}%`], (err, results) => {
-      if (err) {
-        return res.status(500).send('Error retrieving users');
-      }
-      if (results.length === 0) {
-        return res.status(404).send('User not found');
-      }
-      res.json(results);  
-    });
-  };
+    res.status(200).json({ success: true, data: results });
+  });
+};
+
+
   
 
     
