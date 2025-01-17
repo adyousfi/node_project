@@ -33,11 +33,6 @@ Clone this repository to your local machine:
 ```bash
 git clone https://github.com/adyousfi/node_project.git
 
-Navigate into the project directory:
-
-```bash
-cd BackendWeb2
-```
 
 ### Step 2: Install Dependencies
 Install the required Node.js dependencies:
