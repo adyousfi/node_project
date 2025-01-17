@@ -31,8 +31,7 @@ To get started with the project, follow these steps:
 Clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/BackendWeb2.git
-```
+git clone https://github.com/adyousfi/node_project.git
 
 Navigate into the project directory:
 
